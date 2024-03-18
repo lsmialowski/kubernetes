@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-client-depl
+  labels:
+    app: mongo-client-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb-client
+  template:
+    metadata:
+      labels:
+        app: mongodb-client
+    spec:
+      containers:
+        - name: mongo-client
+          image: mongo-express
+          ports:
+            - containerPort: 8081
+          env:
+            - name: ME_CONFIG_MONGODB_ADMINUSERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: mongo-root-username
+            - name: ME_CONFIG_MONGODB_ADMINPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: mongo-root-password
+            - name: ME_CONFIG_MONGODB_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: mongo-config-map
+                  key: mongo-url
+            - name: ME_CONFIG_MONGODB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: mongo-config-map
+                  key: mongo-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-client-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: mongodb-client
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+      nodePort: 30000
